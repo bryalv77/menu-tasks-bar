@@ -14,6 +14,7 @@ BIN="$(swift build -c release ${ARCHS[@]+"${ARCHS[@]}"} --show-bin-path)/TasksBa
 APP=build/TasksBar.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp "$BIN" "$APP/Contents/MacOS/"
+mkdir -p "$APP/Contents/Resources"; cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 cp Resources/Info.plist "$APP/Contents/"
 # Client ID fuera del repo: se lee de client.plist (ignorado por git).
 CID=$(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" client.plist) || { echo "Falta client.plist con CLIENT_ID" >&2; exit 1; }
