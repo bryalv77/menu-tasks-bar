@@ -1,10 +1,12 @@
 #!/bin/bash
 # Compila y ensambla build/TasksBar.app.
 #   UNIVERSAL=1  → binario arm64+x86_64
-#   SIGN_ID="Developer ID Application: Nombre (TEAMID)" → firma real (por defecto ad-hoc)
+#   SIGN_ID="Developer ID Application: Nombre (TEAMID)" → firma real (por defecto ad-hoc; el Keychain pregunta en cada build: usa un cert. estable)
+#   Config local sin commitear: copia .env.example a .env (SIGN_ID, NOTARY_PROFILE)
 #   NOTARY_PROFILE=perfil → notariza y grapa el ticket (necesita SIGN_ID)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+[ -f .env ] && { set -a; . ./.env; set +a; }
 ARCHS=()
 [ "${UNIVERSAL:-0}" = 1 ] && ARCHS=(--arch arm64 --arch x86_64)
 swift build -c release ${ARCHS[@]+"${ARCHS[@]}"}
