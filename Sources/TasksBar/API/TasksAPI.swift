@@ -42,7 +42,7 @@ final class TasksAPI: TasksRepository {
     }
 
     func tasks(in listID: String) async throws -> [GTask] {
-        try await paged("/lists/\(listID)/tasks", query: [
+        try await paged("/lists/\(seg(listID))/tasks", query: [
             .init(name: "maxResults", value: "100"),
             .init(name: "showCompleted", value: "true"),
             .init(name: "showHidden", value: "true"),
@@ -56,16 +56,16 @@ final class TasksAPI: TasksRepository {
         var q: [URLQueryItem] = []
         if let parent { q.append(.init(name: "parent", value: parent)) }
         if let previous { q.append(.init(name: "previous", value: previous)) }
-        return try await send("POST", "/lists/\(listID)/tasks", query: q, body: JSONSerialization.data(withJSONObject: b))
+        return try await send("POST", "/lists/\(seg(listID))/tasks", query: q, body: JSONSerialization.data(withJSONObject: b))
     }
 
     /// PATCH parcial; usar NSNull() como valor para borrar un campo.
     func update(in listID: String, taskID: String, patch: [String: Any]) async throws -> GTask {
-        try await send("PATCH", "/lists/\(listID)/tasks/\(taskID)", body: JSONSerialization.data(withJSONObject: patch))
+        try await send("PATCH", "/lists/\(seg(listID))/tasks/\(seg(taskID))", body: JSONSerialization.data(withJSONObject: patch))
     }
 
     func delete(in listID: String, taskID: String) async throws {
-        let _: EmptyResponse = try await send("DELETE", "/lists/\(listID)/tasks/\(taskID)")
+        let _: EmptyResponse = try await send("DELETE", "/lists/\(seg(listID))/tasks/\(seg(taskID))")
     }
 
     func createList(title: String) async throws -> TaskList {
@@ -73,11 +73,11 @@ final class TasksAPI: TasksRepository {
     }
 
     func renameList(id: String, title: String) async throws -> TaskList {
-        try await send("PATCH", "/users/@me/lists/\(id)", body: JSONSerialization.data(withJSONObject: ["title": title]))
+        try await send("PATCH", "/users/@me/lists/\(seg(id))", body: JSONSerialization.data(withJSONObject: ["title": title]))
     }
 
     func deleteList(id: String) async throws {
-        let _: EmptyResponse = try await send("DELETE", "/users/@me/lists/\(id)")
+        let _: EmptyResponse = try await send("DELETE", "/users/@me/lists/\(seg(id))")
     }
 
     /// Google solo usa la fecha: medianoche UTC del día calendario local elegido.
@@ -87,6 +87,12 @@ final class TasksAPI: TasksRepository {
     }
 
     // MARK: Núcleo
+
+    /// Un ID nunca debe poder añadir segmentos ni parámetros a la ruta.
+    private func seg(_ s: String) -> String {
+        var a = CharacterSet.urlPathAllowed; a.remove("/")
+        return s.addingPercentEncoding(withAllowedCharacters: a) ?? ""
+    }
 
     private func paged<T: Decodable>(_ path: String, query: [URLQueryItem]) async throws -> [T] {
         var all: [T] = []
