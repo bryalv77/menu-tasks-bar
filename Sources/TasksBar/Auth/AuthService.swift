@@ -30,10 +30,12 @@ final class AuthService: ObservableObject {
     private var session: ASWebAuthenticationSession?
     private let anchor = AnchorProvider()
     private let http: URLSession
+    private let storage: TokenStorage
 
-    init(http: URLSession) {
+    init(http: URLSession, storage: TokenStorage = KeychainStorage()) {
         self.http = http
-        if let d = Keychain.load(), let t = try? JSONDecoder().decode(Tokens.self, from: d) {
+        self.storage = storage
+        if let d = storage.load(), let t = try? JSONDecoder().decode(Tokens.self, from: d) {
             tokens = t
         }
         isSignedIn = tokens != nil
@@ -87,7 +89,8 @@ final class AuthService: ObservableObject {
     func signOut() {
         tokens = nil
         refreshTask?.cancel(); refreshTask = nil
-        Keychain.delete()
+        storage.delete()
+        Cache.clear()       // también en cierres automáticos (invalid_grant)
         isSignedIn = false
     }
 
@@ -121,7 +124,7 @@ final class AuthService: ObservableObject {
 
     private func store(_ t: Tokens) {
         tokens = t
-        if let d = try? JSONEncoder().encode(t) { Keychain.save(d) }
+        if let d = try? JSONEncoder().encode(t) { storage.save(d) }
         isSignedIn = true
     }
 

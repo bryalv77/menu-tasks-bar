@@ -15,9 +15,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         c.waitsForConnectivity = false
         return URLSession(configuration: c)
     }()
-    private lazy var auth = AuthService(http: http)
+    private lazy var auth: AuthService = {
+        #if DEBUG
+        if Demo.isOn { return AuthService(http: http, storage: Demo.Storage()) }
+        #endif
+        return AuthService(http: http)
+    }()
     private let settings = AppSettings()
-    private lazy var store = TasksStore(repo: TasksAPI(http: http, auth: auth), settings: settings)
+    private lazy var store: TasksStore = {
+        #if DEBUG
+        if Demo.isOn { return TasksStore(repo: Demo.Repo(), settings: settings) }
+        #endif
+        return TasksStore(repo: TasksAPI(http: http, auth: auth), settings: settings)
+    }()
 
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var panel: KeyPanel!

@@ -391,14 +391,7 @@ struct TaskDetail: View {
         guard !trimmed.isEmpty else { return }
         let newDue = hasDue ? due : nil
         let newMin = hasDue && hasTime ? minutesOfDay(time) : nil
-        let sameDue: Bool = {
-            switch (t.dueDay, newDue) {
-            case (nil, nil): return true
-            case let (a?, b?): return Calendar.current.isDate(a, inSameDayAs: b)
-            default: return false
-            }
-        }()
-        if trimmed == t.title, notes == (t.notes ?? ""), sameDue, newMin == store.minutes(for: taskID) { return }
+        if t.isUnchanged(title: trimmed, notes: notes, due: newDue, minutes: newMin, storedMinutes: store.minutes(for: taskID)) { return }
         Task { await store.edit(t, in: listID, title: trimmed, notes: notes, due: newDue, minutes: newMin) }
     }
 }
@@ -580,6 +573,17 @@ extension GTask {
         if cal.isDateInTomorrow(d) { return "Mañana" }
         if cal.isDateInYesterday(d) { return "Ayer" }
         return d.formatted(.dateTime.day().month(.abbreviated))
+    }
+
+    /// ¿El formulario de edición no cambia nada? (evita un PATCH inútil).
+    func isUnchanged(title: String, notes newNotes: String, due newDue: Date?, minutes newMin: Int?, storedMinutes: Int?) -> Bool {
+        let sameDue: Bool
+        switch (dueDay, newDue) {
+        case (nil, nil): sameDue = true
+        case let (a?, b?): sameDue = Calendar.current.isDate(a, inSameDayAs: b)
+        default: sameDue = false
+        }
+        return title == self.title && newNotes == (notes ?? "") && sameDue && newMin == storedMinutes
     }
 
     func dueLabel(minutes: Int?) -> String? {

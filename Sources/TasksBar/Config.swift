@@ -1,9 +1,11 @@
 import Foundation
 
-/// ÚNICO sitio a editar: pega aquí tu OAuth Client ID (tipo "iOS") de Google Cloud.
-/// Formato: 1234567890-abcdef.apps.googleusercontent.com
+/// El OAuth Client ID (tipo "iOS") no vive en el repo: `scripts/build.sh` lo inyecta en el Info.plist
+/// desde `client.plist` (ignorado por git). Con `swift run`/tests: variable de entorno TASKSBAR_CLIENT_ID.
 enum Config {
-    static let clientID = "YOUR_CLIENT_ID.apps.googleusercontent.com"
+    static let clientID = Bundle.main.object(forInfoDictionaryKey: "CLIENT_ID") as? String
+        ?? ProcessInfo.processInfo.environment["TASKSBAR_CLIENT_ID"]
+        ?? "YOUR_CLIENT_ID.apps.googleusercontent.com"
 
     static let scope = "https://www.googleapis.com/auth/tasks"
     static let apiBase = "https://tasks.googleapis.com/tasks/v1"

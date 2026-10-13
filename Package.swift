@@ -5,6 +5,7 @@ let package = Package(
     name: "TasksBar",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "TasksBar", path: "Sources/TasksBar")
+        .executableTarget(name: "TasksBar", path: "Sources/TasksBar"),
+        .testTarget(name: "TasksBarTests", dependencies: ["TasksBar"], path: "Tests/TasksBarTests"),
     ]
 )

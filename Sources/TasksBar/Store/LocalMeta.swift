@@ -5,7 +5,12 @@ struct LocalMeta: Codable, Equatable {
     var favorites: [String: String] = [:]   // taskID → listID
     var minutes: [String: Int] = [:]        // taskID → minutos desde medianoche
 
-    private static let key = "localMeta"
+    private static let key: String = {
+        #if DEBUG
+        if Demo.isOn { return "localMeta-demo" }   // no mezclar favoritas demo con las reales
+        #endif
+        return "localMeta"
+    }()
 
     static func load() -> LocalMeta {
         guard let d = UserDefaults.standard.data(forKey: key),

@@ -12,5 +12,8 @@ APP=build/TasksBar.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp "$BIN" "$APP/Contents/MacOS/"
 cp Resources/Info.plist "$APP/Contents/"
+# Client ID fuera del repo: se lee de client.plist (ignorado por git).
+CID=$(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" client.plist) || { echo "Falta client.plist con CLIENT_ID" >&2; exit 1; }
+/usr/libexec/PlistBuddy -c "Add :CLIENT_ID string $CID" "$APP/Contents/Info.plist"
 codesign --force --options runtime --sign "${SIGN_ID:--}" "$APP"
 echo "OK → $APP"

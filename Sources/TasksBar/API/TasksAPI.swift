@@ -25,9 +25,17 @@ protocol TasksRepository {
 /// Cliente ligero de Google Tasks REST. Una única URLSession (HTTP/2 + keep-alive).
 final class TasksAPI: TasksRepository {
     private let http: URLSession
-    private let auth: AuthService
+    private let token: (_ forceRefresh: Bool) async throws -> String
 
-    init(http: URLSession, auth: AuthService) { self.http = http; self.auth = auth }
+    init(http: URLSession, auth: AuthService) {
+        self.http = http
+        token = { try await auth.accessToken(forceRefresh: $0) }
+    }
+
+    /// Para tests: token inyectable.
+    init(http: URLSession, token: @escaping (_ forceRefresh: Bool) async throws -> String) {
+        self.http = http; self.token = token
+    }
 
     func lists() async throws -> [TaskList] {
         try await paged("/users/@me/lists", query: [.init(name: "maxResults", value: "100")])
@@ -102,7 +110,7 @@ final class TasksAPI: TasksRepository {
             req.httpMethod = method
             req.httpBody = body
             if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-            req.setValue("Bearer \(try await auth.accessToken(forceRefresh: retriedAuth))", forHTTPHeaderField: "Authorization")
+            req.setValue("Bearer \(try await token(retriedAuth))", forHTTPHeaderField: "Authorization")
 
             let data: Data, resp: URLResponse
             do { (data, resp) = try await http.data(for: req) }
