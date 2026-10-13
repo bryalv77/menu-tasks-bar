@@ -14,6 +14,12 @@ enum APIError: LocalizedError {
 protocol TasksRepository {
     func lists() async throws -> [TaskList]
     func tasks(in listID: String) async throws -> [GTask]
+    func create(in listID: String, title: String, notes: String?, due: Date?, parent: String?, previous: String?) async throws -> GTask
+    func update(in listID: String, taskID: String, patch: [String: Any]) async throws -> GTask
+    func delete(in listID: String, taskID: String) async throws
+    func createList(title: String) async throws -> TaskList
+    func renameList(id: String, title: String) async throws -> TaskList
+    func deleteList(id: String) async throws
 }
 
 /// Cliente ligero de Google Tasks REST. Una única URLSession (HTTP/2 + keep-alive).
@@ -33,6 +39,43 @@ final class TasksAPI: TasksRepository {
             .init(name: "showCompleted", value: "true"),
             .init(name: "showHidden", value: "true"),
         ])
+    }
+
+    func create(in listID: String, title: String, notes: String?, due: Date?, parent: String?, previous: String?) async throws -> GTask {
+        var b: [String: Any] = ["title": title]
+        if let notes, !notes.isEmpty { b["notes"] = notes }
+        if let due { b["due"] = Self.dueString(due) }
+        var q: [URLQueryItem] = []
+        if let parent { q.append(.init(name: "parent", value: parent)) }
+        if let previous { q.append(.init(name: "previous", value: previous)) }
+        return try await send("POST", "/lists/\(listID)/tasks", query: q, body: JSONSerialization.data(withJSONObject: b))
+    }
+
+    /// PATCH parcial; usar NSNull() como valor para borrar un campo.
+    func update(in listID: String, taskID: String, patch: [String: Any]) async throws -> GTask {
+        try await send("PATCH", "/lists/\(listID)/tasks/\(taskID)", body: JSONSerialization.data(withJSONObject: patch))
+    }
+
+    func delete(in listID: String, taskID: String) async throws {
+        let _: EmptyResponse = try await send("DELETE", "/lists/\(listID)/tasks/\(taskID)")
+    }
+
+    func createList(title: String) async throws -> TaskList {
+        try await send("POST", "/users/@me/lists", body: JSONSerialization.data(withJSONObject: ["title": title]))
+    }
+
+    func renameList(id: String, title: String) async throws -> TaskList {
+        try await send("PATCH", "/users/@me/lists/\(id)", body: JSONSerialization.data(withJSONObject: ["title": title]))
+    }
+
+    func deleteList(id: String) async throws {
+        let _: EmptyResponse = try await send("DELETE", "/users/@me/lists/\(id)")
+    }
+
+    /// Google solo usa la fecha: medianoche UTC del día calendario local elegido.
+    static func dueString(_ d: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02dT00:00:00.000Z", c.year!, c.month!, c.day!)
     }
 
     // MARK: Núcleo
