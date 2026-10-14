@@ -62,7 +62,7 @@ final class SettingsAndMetaTests: XCTestCase {
     }
 }
 
-/// Lógica pura que usan las vistas (fechas límite, etiquetas, detección de cambios).
+/// Pure logic used by the views (due dates, labels, change detection).
 final class ViewLogicTests: XCTestCase {
     private let cal = Calendar.current
     private func task(due: Date?, status: String = "needsAction", title: String = "T", notes: String? = nil) -> GTask {
@@ -79,13 +79,13 @@ final class ViewLogicTests: XCTestCase {
     }
 
     func testDueLabels() {
-        XCTAssertEqual(task(due: day(0)).dueLabel, "Hoy")
-        XCTAssertEqual(task(due: day(1)).dueLabel, "Mañana")
-        XCTAssertEqual(task(due: day(-1)).dueLabel, "Ayer")
+        XCTAssertEqual(task(due: day(0)).dueLabel, "Today")
+        XCTAssertEqual(task(due: day(1)).dueLabel, "Tomorrow")
+        XCTAssertEqual(task(due: day(-1)).dueLabel, "Yesterday")
         XCTAssertNotNil(task(due: day(20)).dueLabel)
         XCTAssertNil(task(due: nil).dueLabel)
-        XCTAssertEqual(task(due: day(0)).dueLabel(minutes: 545), "Hoy 09:05")
-        XCTAssertEqual(task(due: day(0)).dueLabel(minutes: nil), "Hoy")
+        XCTAssertEqual(task(due: day(0)).dueLabel(minutes: 545), "Today 09:05")
+        XCTAssertEqual(task(due: day(0)).dueLabel(minutes: nil), "Today")
     }
 
     func testOverdue() {
@@ -98,7 +98,7 @@ final class ViewLogicTests: XCTestCase {
 
     func testOverdueWithTimeToday() throws {
         XCTAssertTrue(task(due: day(0)).isOverdue(minutes: 0) || minutesOfDay(Date()) == 0)
-        try XCTSkipIf(minutesOfDay(Date()) >= 23 * 60 + 59, "demasiado cerca de medianoche")
+        try XCTSkipIf(minutesOfDay(Date()) >= 23 * 60 + 59, "too close to midnight")
         XCTAssertFalse(task(due: day(0)).isOverdue(minutes: 23 * 60 + 59))
         XCTAssertTrue(task(due: day(-1)).isOverdue(minutes: 23 * 60 + 59))
         XCTAssertFalse(task(due: day(1)).isOverdue(minutes: 0))
@@ -106,7 +106,7 @@ final class ViewLogicTests: XCTestCase {
 
     func testMinutesHelpers() {
         XCTAssertEqual(minutesOfDay(dateFromMinutes(750)), 750)
-        XCTAssertEqual(minutesOfDay(dateFromMinutes(nil)), 540, "por defecto 09:00")
+        XCTAssertEqual(minutesOfDay(dateFromMinutes(nil)), 540, "defaults to 09:00")
     }
 
     func testIsUnchangedDetectsEachField() {

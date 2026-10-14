@@ -12,17 +12,17 @@ enum Keychain {
     }
 
     static func save(_ data: Data) {
-        // Update in place: no hay ventana sin token si falla el guardado.
+        // Update in place: no window without a token if saving fails.
         let status = SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         guard status == errSecItemNotFound else {
-            if status != errSecSuccess { NSLog("Keychain update falló: \(status)") }
+            if status != errSecSuccess { NSLog("Keychain update failed: \(status)") }
             return
         }
         var q = base
         q[kSecValueData as String] = data
         q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let add = SecItemAdd(q as CFDictionary, nil)
-        if add != errSecSuccess { NSLog("Keychain add falló: \(add)") }
+        if add != errSecSuccess { NSLog("Keychain add failed: \(add)") }
     }
 
     static func load() -> Data? {
@@ -37,7 +37,7 @@ enum Keychain {
     static func delete() { SecItemDelete(base as CFDictionary) }
 }
 
-/// Abstracción del almacenamiento de tokens (el Keychain real en la app, memoria en tests).
+/// Token storage abstraction (the real Keychain in the app, memory in tests).
 protocol TokenStorage {
     func load() -> Data?
     func save(_ data: Data)

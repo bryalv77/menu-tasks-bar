@@ -1,19 +1,19 @@
 import Foundation
 @testable import TasksBar
 
-/// Servidor falso de Google Tasks en memoria, enchufado a una URLSession vía URLProtocol.
+/// In-memory fake Google Tasks server, plugged into a URLSession via URLProtocol.
 final class FakeGoogle: URLProtocol {
     nonisolated(unsafe) static var lists: [[String: Any]] = []
     nonisolated(unsafe) static var tasks: [String: [[String: Any]]] = [:]
     nonisolated(unsafe) static var requests: [(method: String, path: String, query: [String: String], body: [String: Any])] = []
-    nonisolated(unsafe) static var failures: [Int] = []       // códigos HTTP para las próximas peticiones
+    nonisolated(unsafe) static var failures: [Int] = []       // HTTP codes for the next requests
     nonisolated(unsafe) static var offline = false
     nonisolated(unsafe) static var pageSize = 100
     nonisolated(unsafe) static var counter = 0
-    nonisolated(unsafe) static var delay: TimeInterval = 0       // latencia de respuesta
+    nonisolated(unsafe) static var delay: TimeInterval = 0       // response latency
     nonisolated(unsafe) static var tokenStatus = 200
     nonisolated(unsafe) static var tokenBody: [String: Any] = ["access_token": "fresh", "expires_in": 3600]
-    nonisolated(unsafe) static var tokenForms: [String] = []     // cuerpos enviados a /token
+    nonisolated(unsafe) static var tokenForms: [String] = []     // bodies sent to /token
     private static let lock = NSLock()
 
     static func reset() {
@@ -126,7 +126,7 @@ final class FakeGoogle: URLProtocol {
             var t = body
             t["id"] = "T\(counter)"
             t["status"] = "needsAction"
-            // Como Google: sin `previous` va primero entre sus hermanas; con `previous`, justo después.
+            // Like Google: without `previous` it goes first among its siblings; with `previous`, right after it.
             let sibs = tasks[lid]!.filter { $0["parent"] as? String == query["parent"] }
             if let prev = query["previous"], let pp = tasks[lid]!.first(where: { $0["id"] as? String == prev })?["position"] as? String {
                 t["position"] = pp + "~"

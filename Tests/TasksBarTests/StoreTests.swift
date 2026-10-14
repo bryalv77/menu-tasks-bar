@@ -1,7 +1,7 @@
 import XCTest
 @testable import TasksBar
 
-/// E2E sin red real: Store → TasksAPI → URLSession → FakeGoogle.
+/// E2E without a real network: Store → TasksAPI → URLSession → FakeGoogle.
 @MainActor
 final class StoreTests: XCTestCase {
     private let fav = TasksStore.favoritesID
@@ -16,7 +16,7 @@ final class StoreTests: XCTestCase {
         Cache.clear()
     }
 
-    /// Crea el store contra el servidor falso y sincroniza.
+    /// Creates the store against the fake server and syncs.
     private func boot(_ configure: (AppSettings) -> Void = { _ in }) async {
         let s = AppSettings(); configure(s)
         store = TasksStore(repo: TasksAPI(http: FakeGoogle.session) { _ in "tok" }, settings: s)
@@ -40,7 +40,7 @@ final class StoreTests: XCTestCase {
     private func titles() -> [String] { store.rows.map(\.task.title) }
     private func t(_ id: String, _ lid: String = "L1") -> GTask { store.task(id, in: lid)! }
 
-    // MARK: Sync / listados
+    // MARK: Sync / listings
 
     func testSyncLoadsListsAndSelectedListRows() async {
         seedStandard(); await boot()
@@ -48,7 +48,7 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(store.selectedListID, "L1")
         XCTAssertEqual(titles(), ["A", "A1", "B"])
         XCTAssertEqual(store.rows.map(\.depth), [0, 1, 0])
-        XCTAssertNil(store.tasksByList["L2"], "solo se descarga la lista seleccionada")
+        XCTAssertNil(store.tasksByList["L2"], "only the selected list is downloaded")
         XCTAssertNil(store.notice)
     }
 
@@ -76,7 +76,7 @@ final class StoreTests: XCTestCase {
         await Task.yield()
         FakeGoogle.offline = true
         await store.sync()
-        XCTAssertEqual(store.notice, "Sin conexión.")
+        XCTAssertEqual(store.notice, "No connection.")
         XCTAssertEqual(titles(), ["A", "A1", "B"])
         FakeGoogle.offline = false
         await store.sync()
@@ -122,13 +122,13 @@ final class StoreTests: XCTestCase {
         FakeGoogle.seed(list: "L1", "L", tasks: [FakeGoogle.task("p", "Pending"), oldT, n1, n2])
 
         await boot { $0.completedDays = 1; $0.maxCompleted = 10 }
-        XCTAssertEqual(Set(titles()), ["Pending", "New1", "New2"], "la completada antigua queda fuera de la ventana")
+        XCTAssertEqual(Set(titles()), ["Pending", "New1", "New2"], "the old completed task falls outside the window")
         XCTAssertEqual(store.completedCount, 3, "completedCount cuenta todas, visibles o no")
 
         let s = AppSettings(); s.completedDays = -1; s.maxCompleted = 1
         store = TasksStore(repo: TasksAPI(http: FakeGoogle.session) { _ in "t" }, settings: s)
         await store.sync()
-        XCTAssertEqual(titles().count, 2, "pendiente + 1 completada (máximo)")
+        XCTAssertEqual(titles().count, 2, "pending + 1 completed (maximum)")
 
         let s2 = AppSettings(); s2.showCompleted = false
         store = TasksStore(repo: TasksAPI(http: FakeGoogle.session) { _ in "t" }, settings: s2)
@@ -150,7 +150,7 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(titles(), ["A", "B"])
     }
 
-    // MARK: CRUD de tareas
+    // MARK: Task CRUD
 
     func testAddTaskTrimsAndPersistsRemotely() async {
         seedStandard(); await boot()
@@ -175,7 +175,7 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(store.minutes(for: id), 540)
         XCTAssertEqual(t(id).due, "2026-05-01T00:00:00.000Z")
         await store.add(title: "NoDue", minutes: 60)
-        XCTAssertNil(store.minutes(for: store.rows.first!.id), "minutos sin fecha se ignoran")
+        XCTAssertNil(store.minutes(for: store.rows.first!.id), "minutes without a date are ignored")
     }
 
     func testAddFailureShowsNoticeAndAddsNothing() async {
@@ -198,7 +198,7 @@ final class StoreTests: XCTestCase {
 
         await store.edit(t("a"), in: "L1", title: "A+", notes: "", due: nil, minutes: 90)
         XCTAssertNil(t("a").due); XCTAssertTrue(t("a").notes?.isEmpty ?? true)
-        XCTAssertNil(store.minutes(for: "a"), "sin fecha se borra la hora")
+        XCTAssertNil(store.minutes(for: "a"), "without a date the time is cleared")
     }
 
     func testEditFailureRollsBack() async {
@@ -266,11 +266,11 @@ final class StoreTests: XCTestCase {
         await boot()
         FakeGoogle.failures = [500]
         await store.deleteCompleted()
-        XCTAssertEqual(FakeGoogle.titles("L1").count, 1, "una falló en el servidor")
-        XCTAssertEqual(store.completedCount, 1, "tras el resync coincide con el servidor")
+        XCTAssertEqual(FakeGoogle.titles("L1").count, 1, "one failed on the server")
+        XCTAssertEqual(store.completedCount, 1, "after the resync it matches the server")
     }
 
-    // MARK: Subtareas
+    // MARK: Subtasks
 
     func testAddSubtaskGoesAfterLastSiblingAndIndents() async {
         seedStandard(); await boot()
@@ -299,7 +299,7 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(store.subtasks(of: "a", in: "L1").isEmpty)
     }
 
-    // MARK: Favoritas
+    // MARK: Favorites
 
     func testToggleFavoriteOnOffAndPersists() async {
         seedStandard(); await boot()
@@ -318,11 +318,11 @@ final class StoreTests: XCTestCase {
         store.toggleFavorite(t("h", "L2"), in: "L2")
         store.selectedListID = fav
         await eventually(self.titles() == ["A1", "H"])
-        XCTAssertEqual(store.rows.map(\.depth), [0, 0], "sin sangría")
+        XCTAssertEqual(store.rows.map(\.depth), [0, 0], "no indentation")
         XCTAssertEqual(store.rows.map(\.listID), ["L1", "L2"])
         XCTAssertEqual(store.badge, 2)
 
-        // Nueva sesión: la lista L2 no está seleccionada pero sus favoritas se descargan al sincronizar.
+        // New session: list L2 isn't selected but its favorites are downloaded on sync.
         FakeGoogle.tasks["L2"]!.append(FakeGoogle.task("h2", "H2"))
         await store.sync()
         XCTAssertNotNil(store.task("h2", in: "L2"))
@@ -351,7 +351,7 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(store.isFavorite(store.rows.first!.id))
     }
 
-    // MARK: CRUD de listas
+    // MARK: List CRUD
 
     func testAddListSelectsIt() async {
         seedStandard(); await boot()
@@ -370,13 +370,13 @@ final class StoreTests: XCTestCase {
 
     func testRenameListSuccessAndFailure() async {
         seedStandard(); await boot()
-        await store.renameList(store.lists[0], to: "Trabajo")
-        XCTAssertEqual(store.lists[0].title, "Trabajo")
-        XCTAssertEqual(FakeGoogle.lists[0]["title"] as? String, "Trabajo")
+        await store.renameList(store.lists[0], to: "Work")
+        XCTAssertEqual(store.lists[0].title, "Work")
+        XCTAssertEqual(FakeGoogle.lists[0]["title"] as? String, "Work")
 
         FakeGoogle.failures = [500]
         await store.renameList(store.lists[0], to: "Otro")
-        XCTAssertEqual(store.lists[0].title, "Trabajo", "rollback")
+        XCTAssertEqual(store.lists[0].title, "Work", "rollback")
         XCTAssertNotNil(store.notice)
 
         let n = FakeGoogle.requests.count

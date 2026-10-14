@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 final class TasksStore: ObservableObject {
-    /// Pestaña virtual con las tareas marcadas como favoritas (de todas las listas).
+    /// Virtual tab with the tasks marked as favorites (from all lists).
     static let favoritesID = "__favorites__"
 
     @Published private(set) var lists: [TaskList]
@@ -19,19 +19,19 @@ final class TasksStore: ObservableObject {
 
     let settings: AppSettings
     private let repo: TasksRepository
-    private var pendingWrites = 0     // sync se pospone mientras hay escrituras en vuelo (evita pisar cambios optimistas)
+    private var pendingWrites = 0     // sync is postponed while writes are in flight (avoids overwriting optimistic changes)
     private var bag = Set<AnyCancellable>()
 
     init(repo: TasksRepository, settings: AppSettings) {
         self.repo = repo
         self.settings = settings
-        let snap = Cache.load()           // pinta desde caché antes de tocar la red
+        let snap = Cache.load()           // draws from cache before touching the network
         lists = snap.lists
         tasksByList = snap.tasks
         meta = LocalMeta.load()
         selectedListID = Self.initialSelection(settings.defaultListID, lists: snap.lists)
         rebuildRows()
-        // objectWillChange se emite ANTES del cambio: reconstruimos en el siguiente ciclo.
+        // objectWillChange fires BEFORE the change: we rebuild on the next cycle.
         settings.objectWillChange.sink { [weak self] in
             DispatchQueue.main.async { self?.rebuildRows() }
         }.store(in: &bag)
@@ -43,7 +43,7 @@ final class TasksStore: ObservableObject {
         return lists.first?.id
     }
 
-    // MARK: Consultas
+    // MARK: Queries
 
     func task(_ id: String, in listID: String) -> GTask? {
         tasksByList[listID]?.first { $0.id == id }
@@ -73,14 +73,14 @@ final class TasksStore: ObservableObject {
             if selectedListID == nil || (selectedListID != Self.favoritesID && !valid.contains(selectedListID!)) {
                 selectedListID = Self.initialSelection(settings.defaultListID, lists: remoteLists)
             }
-            // Lista seleccionada + las listas que contienen favoritas.
+            // Selected list + the lists that contain favorites.
             var toFetch = Set(meta.favorites.values).intersection(valid)
             if let s = selectedListID, valid.contains(s) { toFetch.insert(s) }
             for id in toFetch.sorted() {
                 let fetched = try await repo.tasks(in: id)
                 tasksByList[id] = fetched
                 let present = Set(fetched.map(\.id))
-                // Favoritas cuya tarea ya no existe (borrada desde otro dispositivo).
+                // Favorites whose task no longer exists (deleted from another device).
                 meta.favorites = meta.favorites.filter { $0.value != id || present.contains($0.key) }
             }
             tasksByList = tasksByList.filter { valid.contains($0.key) }
@@ -91,11 +91,11 @@ final class TasksStore: ObservableObject {
         } catch is CancellationError {
         } catch AuthError.signedOut {
         } catch {
-            notice = error.localizedDescription     // la caché sigue visible
+            notice = error.localizedDescription     // the cache stays visible
         }
     }
 
-    // MARK: Tareas
+    // MARK: Tasks
 
     func toggle(_ t: GTask, in lid: String) async {
         let done = !t.isCompleted
@@ -105,7 +105,7 @@ final class TasksStore: ObservableObject {
         await apply(patch, to: t.id, in: lid, rollback: t)
     }
 
-    /// Crea una tarea (o subtarea si hay `parent`). Sin `listID`: la lista seleccionada; en Favoritas, la primera lista y queda marcada.
+    /// Creates a task (or a subtask if `parent` is set). Without `listID`: the selected list; in Favorites, the first list, and it gets marked.
     func add(title: String, notes: String = "", due: Date? = nil, minutes: Int? = nil,
              parent: String? = nil, in listID: String? = nil, favorite: Bool = false) async {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -116,7 +116,7 @@ final class TasksStore: ObservableObject {
         else if let s = selectedListID, s != Self.favoritesID { lid = s }
         else if let f = lists.first?.id { lid = f; fav = true }
         else { return }
-        // Las subtareas nuevas se agregan al final.
+        // New subtasks are appended at the end.
         let previous = parent == nil ? nil : subtasks(of: parent!, in: lid).last?.id
         pendingWrites += 1; defer { pendingWrites -= 1 }
         do {
@@ -162,7 +162,7 @@ final class TasksStore: ObservableObject {
         }
     }
 
-    /// Borra definitivamente todas las completadas de la lista seleccionada (también las ocultas).
+    /// Permanently deletes all completed tasks of the selected list (hidden ones too).
     func deleteCompleted() async {
         guard let lid = selectedListID, lid != Self.favoritesID else { return }
         let ids = (tasksByList[lid] ?? []).filter(\.isCompleted).map(\.id)
@@ -181,7 +181,7 @@ final class TasksStore: ObservableObject {
         if failed > 0 {
             if tasksByList[lid] != nil, let backup { tasksByList[lid] = backup }
             rebuildRows()
-            notice = "No se pudieron eliminar \(failed) tareas."
+            notice = "Could not delete \(failed) tasks."
             await sync()
         } else {
             gone.forEach { meta.favorites[$0] = nil; meta.minutes[$0] = nil }
@@ -190,7 +190,7 @@ final class TasksStore: ObservableObject {
         }
     }
 
-    // MARK: Listas
+    // MARK: Lists
 
     func addList(title: String) async {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -239,7 +239,7 @@ final class TasksStore: ObservableObject {
         Cache.clear()
     }
 
-    // MARK: Interno
+    // MARK: Internal
 
     private func mutate(_ id: String, in lid: String, _ f: (inout GTask) -> Void) {
         guard let i = tasksByList[lid]?.firstIndex(where: { $0.id == id }) else { return }
@@ -247,7 +247,7 @@ final class TasksStore: ObservableObject {
         rebuildRows()
     }
 
-    /// Envía el PATCH; si falla restaura la tarea anterior.
+    /// Sends the PATCH; if it fails, restores the previous task.
     private func apply(_ patch: [String: Any], to id: String, in lid: String, rollback old: GTask) async {
         pendingWrites += 1; defer { pendingWrites -= 1 }
         do {
@@ -263,7 +263,7 @@ final class TasksStore: ObservableObject {
     private func rebuildRows() {
         var all: [TaskRow]
         if selectedListID == Self.favoritesID {
-            // Todas las favoritas (también subtareas), sin sangría y agrupadas por lista.
+            // All favorites (subtasks too), unindented and grouped by list.
             all = lists.flatMap { l in TaskRow.flatten(tasksByList[l.id] ?? [], listID: l.id) }
                 .filter { meta.favorites[$0.task.id] != nil }
                 .map { TaskRow(task: $0.task, depth: 0, listID: $0.listID) }
@@ -275,7 +275,7 @@ final class TasksStore: ObservableObject {
 
         badge = settings.showBadge ? all.filter { !$0.task.isCompleted }.count : 0
 
-        // Completadas: ventana de días + máximo (las más recientes primero).
+        // Completed: day window + maximum (most recent first).
         var allowed = Set<String>()
         if settings.showCompleted {
             var done = all.map(\.task).filter(\.isCompleted)

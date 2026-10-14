@@ -5,12 +5,12 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .http(let c, let m): return m.isEmpty ? "Error \(c)" : "Error \(c): \(m)"
-        case .offline: return "Sin conexión."
+        case .offline: return "No connection."
         }
     }
 }
 
-/// Repositorio remoto. El Store depende de este protocolo → testeable con datos falsos.
+/// Remote repository. The Store depends on this protocol → testable with fake data.
 protocol TasksRepository {
     func lists() async throws -> [TaskList]
     func tasks(in listID: String) async throws -> [GTask]
@@ -22,7 +22,7 @@ protocol TasksRepository {
     func deleteList(id: String) async throws
 }
 
-/// Cliente ligero de Google Tasks REST. Una única URLSession (HTTP/2 + keep-alive).
+/// Lightweight Google Tasks REST client. A single URLSession (HTTP/2 + keep-alive).
 final class TasksAPI: TasksRepository {
     private let http: URLSession
     private let token: (_ forceRefresh: Bool) async throws -> String
@@ -32,7 +32,7 @@ final class TasksAPI: TasksRepository {
         token = { try await auth.accessToken(forceRefresh: $0) }
     }
 
-    /// Para tests: token inyectable.
+    /// For tests: injectable token.
     init(http: URLSession, token: @escaping (_ forceRefresh: Bool) async throws -> String) {
         self.http = http; self.token = token
     }
@@ -59,7 +59,7 @@ final class TasksAPI: TasksRepository {
         return try await send("POST", "/lists/\(seg(listID))/tasks", query: q, body: JSONSerialization.data(withJSONObject: b))
     }
 
-    /// PATCH parcial; usar NSNull() como valor para borrar un campo.
+    /// Partial PATCH; use NSNull() as the value to clear a field.
     func update(in listID: String, taskID: String, patch: [String: Any]) async throws -> GTask {
         try await send("PATCH", "/lists/\(seg(listID))/tasks/\(seg(taskID))", body: JSONSerialization.data(withJSONObject: patch))
     }
@@ -80,21 +80,21 @@ final class TasksAPI: TasksRepository {
         let _: EmptyResponse = try await send("DELETE", "/users/@me/lists/\(seg(id))")
     }
 
-    /// Google solo usa la fecha: medianoche UTC del día calendario local elegido.
+    /// Google only uses the date: midnight UTC of the chosen local calendar day.
     static func dueString(_ d: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
         return String(format: "%04d-%02d-%02dT00:00:00.000Z", c.year!, c.month!, c.day!)
     }
 
-    /// Solo el `error.message` de Google; nunca el cuerpo crudo (puede ser HTML o texto técnico).
+    /// Only Google's `error.message`; never the raw body (may be HTML or technical text).
     static func errorMessage(from data: Data) -> String {
         struct E: Decodable { struct B: Decodable { let message: String? }; let error: B? }
         return (try? JSONDecoder().decode(E.self, from: data))?.error?.message.map { String($0.prefix(200)) } ?? ""
     }
 
-    // MARK: Núcleo
+    // MARK: Core
 
-    /// Un ID nunca debe poder añadir segmentos ni parámetros a la ruta.
+    /// An ID must never be able to add segments or parameters to the path.
     private func seg(_ s: String) -> String {
         var a = CharacterSet.urlPathAllowed; a.remove("/")
         return s.addingPercentEncoding(withAllowedCharacters: a) ?? ""

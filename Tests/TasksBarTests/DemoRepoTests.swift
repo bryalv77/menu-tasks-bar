@@ -20,7 +20,7 @@ final class DemoRepoTests: XCTestCase {
     func testCreateOrdersLikeGoogle() async throws {
         let top = try await repo.create(in: "L1", title: "Top", notes: "n", due: nil, parent: nil, previous: nil)
         let rows = TaskRow.flatten(try await repo.tasks(in: "L1"), listID: "L1")
-        XCTAssertEqual(rows.first?.id, top.id, "sin previous va primero")
+        XCTAssertEqual(rows.first?.id, top.id, "without previous it goes first")
         XCTAssertEqual(top.notes, "n")
 
         let sub = try await repo.create(in: "L1", title: "A3", notes: nil, due: nil, parent: "a", previous: "a2")

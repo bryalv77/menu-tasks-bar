@@ -1,19 +1,19 @@
 import Foundation
 import ServiceManagement
 
-/// Preferencias persistidas en UserDefaults.
+/// Preferences persisted in UserDefaults.
 @MainActor
 final class AppSettings: ObservableObject {
     private let d = UserDefaults.standard
 
     @Published var showSubtasks: Bool { didSet { d.set(showSubtasks, forKey: "showSubtasks") } }
     @Published var showCompleted: Bool { didSet { d.set(showCompleted, forKey: "showCompleted") } }
-    /// Días hacia atrás desde el inicio de hoy: 0 = solo hoy, 1 = desde ayer, -1 = todas.
+    /// Days back from the start of today: 0 = only today, 1 = since yesterday, -1 = all.
     @Published var completedDays: Int { didSet { d.set(completedDays, forKey: "completedDays") } }
-    /// Máximo de completadas visibles; 0 = sin límite.
+    /// Maximum visible completed tasks; 0 = no limit.
     @Published var maxCompleted: Int { didSet { d.set(maxCompleted, forKey: "maxCompleted") } }
     @Published var showBadge: Bool { didSet { d.set(showBadge, forKey: "showBadge") } }
-    /// Pestaña que se abre al iniciar: "" = primera lista, "__favorites__" = Favoritas, o el id de una lista.
+    /// Tab opened at launch: "" = first list, "__favorites__" = Favorites, or a list id.
     @Published var defaultListID: String { didSet { d.set(defaultListID, forKey: "defaultListID") } }
 
     init() {
@@ -26,7 +26,7 @@ final class AppSettings: ObservableObject {
         defaultListID = d.string(forKey: "defaultListID") ?? ""
     }
 
-    /// Iniciar al encender el Mac. El estado real lo guarda macOS (SMAppService), no UserDefaults.
+    /// Launch at login. The real state is kept by macOS (SMAppService), not UserDefaults.
     @Published private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published var launchError: String?
 

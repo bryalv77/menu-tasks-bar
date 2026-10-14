@@ -10,11 +10,11 @@ struct GTask: Codable, Identifiable, Hashable {
     var title: String
     var notes: String?
     var status: String          // "needsAction" | "completed"
-    var due: String?            // RFC 3339 (Google solo usa la parte de fecha)
+    var due: String?            // RFC 3339 (Google only uses the date part)
     var parent: String?
     var position: String?
     var updated: String?
-    var completed: String?      // RFC 3339, solo si status == completed
+    var completed: String?      // RFC 3339, only if status == completed
     var deleted: Bool?
     var hidden: Bool?
 
@@ -48,14 +48,14 @@ struct Page<T: Decodable>: Decodable {
     let nextPageToken: String?
 }
 
-/// Fila ya aplanada para pintar (subtareas con depth > 0).
+/// Already-flattened row ready to draw (subtasks have depth > 0).
 struct TaskRow: Identifiable, Hashable {
     let task: GTask
     let depth: Int
     let listID: String
     var id: String { task.id }
 
-    /// Ordena por `position` (cadenas numéricas con ceros a la izquierda → orden léxico) y anida por `parent`.
+    /// Sorts by `position` (zero-padded numeric strings → lexical order) and nests by `parent`.
     static func flatten(_ tasks: [GTask], listID: String) -> [TaskRow] {
         let ids = Set(tasks.map(\.id))
         let byParent = Dictionary(grouping: tasks) { t -> String in

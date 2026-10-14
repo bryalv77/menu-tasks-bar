@@ -12,15 +12,15 @@ enum AuthError: LocalizedError {
     case signedOut, cancelled, badCallback, server(String)
     var errorDescription: String? {
         switch self {
-        case .signedOut: return "Sesión no iniciada."
-        case .cancelled: return "Inicio de sesión cancelado."
-        case .badCallback: return "Respuesta de Google no válida."
+        case .signedOut: return "Not signed in."
+        case .cancelled: return "Sign-in cancelled."
+        case .badCallback: return "Invalid response from Google."
         case .server(let m): return "Google: \(m)"
         }
     }
 }
 
-/// OAuth 2.0 + PKCE con ASWebAuthenticationSession (cliente "iOS": sin client secret).
+/// OAuth 2.0 + PKCE with ASWebAuthenticationSession ("iOS" client: no client secret).
 @MainActor
 final class AuthService: ObservableObject {
     @Published private(set) var isSignedIn: Bool
@@ -90,13 +90,13 @@ final class AuthService: ObservableObject {
         tokens = nil
         refreshTask?.cancel(); refreshTask = nil
         storage.delete()
-        Cache.clear()       // también en cierres automáticos (invalid_grant)
+        Cache.clear()       // also on automatic sign-outs (invalid_grant)
         isSignedIn = false
     }
 
     // MARK: Tokens
 
-    /// Devuelve un access token válido; refresca de forma transparente (una sola petición aunque haya varias concurrentes).
+    /// Returns a valid access token; refreshes transparently (a single request even with several concurrent callers).
     func accessToken(forceRefresh: Bool = false) async throws -> String {
         guard let t = tokens else { throw AuthError.signedOut }
         if !forceRefresh, t.expiry > Date().addingTimeInterval(60) { return t.access }
@@ -117,7 +117,7 @@ final class AuthService: ObservableObject {
             store(new)
             return new.access
         } catch AuthError.server(let m) where m.contains("invalid_grant") {
-            signOut()           // refresh token revocado/caducado → volver a login
+            signOut()           // refresh token revoked/expired → back to sign-in
             throw AuthError.signedOut
         }
     }
@@ -161,7 +161,7 @@ private extension Data {
     }
 }
 
-/// App de barra de menús: ventana oculta como ancla de la sesión web.
+/// Menu bar app: hidden window used as the anchor for the web session.
 private final class AnchorProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     private lazy var window = NSWindow()
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {

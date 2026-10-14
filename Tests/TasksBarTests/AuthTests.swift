@@ -45,7 +45,7 @@ final class AuthTests: XCTestCase {
         XCTAssertTrue(FakeGoogle.tokenForms[0].contains("grant_type=refresh_token"))
         XCTAssertTrue(FakeGoogle.tokenForms[0].contains("refresh_token=R"))
         XCTAssertEqual(mem.tokens?.access, "fresh")
-        XCTAssertEqual(mem.tokens?.refresh, "R", "Google no reenvía el refresh token")
+        XCTAssertEqual(mem.tokens?.refresh, "R", "Google doesn't resend the refresh token")
     }
 
     func testTokenNearExpiryRefreshes() async throws {
@@ -108,7 +108,7 @@ final class AuthTests: XCTestCase {
         XCTAssertNil(mem.data)
     }
 
-    /// Integración: la API recibe 401, refresca el token y reintenta una vez.
+    /// Integration: the API gets a 401, refreshes the token and retries once.
     func testAPIRecoversFrom401ThroughRealAuth() async throws {
         seed()
         FakeGoogle.seed(list: "L", "L")
@@ -124,8 +124,8 @@ final class AuthTests: XCTestCase {
         XCTAssertTrue(Config.redirectURI.hasPrefix("com.googleusercontent.apps."))
         XCTAssertTrue(Config.redirectURI.hasSuffix(":/oauth2redirect"))
         XCTAssertFalse(Config.redirectScheme.contains(".apps.googleusercontent.com"))
-        XCTAssertEqual(AuthError.signedOut.errorDescription, "Sesión no iniciada.")
+        XCTAssertEqual(AuthError.signedOut.errorDescription, "Not signed in.")
         XCTAssertEqual(AuthError.server("x").errorDescription, "Google: x")
-        XCTAssertEqual(APIError.offline.errorDescription, "Sin conexión.")
+        XCTAssertEqual(APIError.offline.errorDescription, "No connection.")
     }
 }

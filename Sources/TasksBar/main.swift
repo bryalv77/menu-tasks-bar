@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Panel sin borde que puede recibir teclado (para los campos de texto).
+/// Borderless panel that can receive keyboard input (for the text fields).
 final class KeyPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var bag = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ n: Notification) {
-        // Panel precreado y reutilizado: la vista ya está cargada cuando se hace click.
+        // Panel is created once and reused: the view is already loaded when the icon is clicked.
         let host = NSHostingController(rootView: RootView(auth: auth, store: store))
         _ = host.view
         host.view.wantsLayer = true
@@ -62,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .sink { [weak self] n in self?.item.button?.title = n > 0 ? " \(n)" : "" }.store(in: &bag)
 
         if auth.isSignedIn { Task { await store.sync() } }
-        // Google Tasks no tiene push: sondeo cada 30 s con el panel abierto y cada 5 min en segundo plano.
+        // Google Tasks has no push: poll every 30 s while the panel is open and every 5 min in the background.
         Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.auth.isSignedIn else { return }
@@ -74,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainActor.assumeIsolated { if self?.auth.isSignedIn == true { self?.refresh() } }
         }
         auth.$isSignedIn.dropFirst().filter { $0 }.sink { [weak self] _ in Task { await self?.store.sync() } }.store(in: &bag)
-        // Cualquier cierre de sesión (también el automático por invalid_grant) borra los datos en memoria y las favoritas.
+        // Any sign-out (including the automatic one on invalid_grant) wipes the in-memory data and favorites.
         auth.$isSignedIn.dropFirst().filter { !$0 }.sink { [weak self] _ in self?.store.reset() }.store(in: &bag)
     }
 
@@ -89,11 +89,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func toggle() {
-        // Si el click en el icono es lo que quitó el foco al panel, solo se cierra.
+        // If clicking the icon is what took focus from the panel, just close it.
         if panel.isVisible || Date().timeIntervalSince(lastHidden) < 0.2 { panel.orderOut(nil); return }
         guard let bw = item.button?.window else { return }
         let screen = bw.screen ?? NSScreen.main
-        let vis = screen?.visibleFrame ?? .zero          // visibleFrame excluye la barra de menú
+        let vis = screen?.visibleFrame ?? .zero          // visibleFrame excludes the menu bar
         let size = panel.frame.size
         let x = min(max(bw.frame.midX - size.width / 2, vis.minX + 8), vis.maxX - size.width - 8)
         let y = vis.maxY - size.height - 6
@@ -106,7 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
 MainActor.assumeIsolated {
     let app = NSApplication.shared
-    app.setActivationPolicy(.accessory)      // sin icono en el Dock
+    app.setActivationPolicy(.accessory)      // no Dock icon
     let delegate = AppDelegate()
     app.delegate = delegate
     app.run()

@@ -6,7 +6,7 @@ struct Snapshot: Codable {
     var selectedListID: String?
 }
 
-/// Caché JSON en Application Support. Carga síncrona (pequeña) para pintar al instante; escritura fuera del hilo principal.
+/// JSON cache in Application Support. Synchronous (small) load to draw instantly; writes off the main thread.
 enum Cache {
     private static var isDemo: Bool {
         #if DEBUG
@@ -16,7 +16,7 @@ enum Cache {
         #endif
     }
     private static let url: URL = {
-        // Bajo XCTest o modo demo usamos un directorio temporal para no tocar la caché real del usuario.
+        // Under XCTest or demo mode we use a temporary directory so the user's real cache is untouched.
         let base = NSClassFromString("XCTestCase") != nil || Self.isDemo ? FileManager.default.temporaryDirectory
             : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let dir = base.appendingPathComponent("TasksBar", isDirectory: true)
@@ -27,7 +27,7 @@ enum Cache {
     private static let queue = DispatchQueue(label: "tasksbar.cache", qos: .utility)
 
     static func load() -> Snapshot {
-        // queue.sync: ordena la lectura tras escrituras/borrados pendientes.
+        // queue.sync: orders the read after pending writes/deletes.
         guard let d = queue.sync(execute: { try? Data(contentsOf: url) }), let s = try? JSONDecoder().decode(Snapshot.self, from: d) else { return Snapshot() }
         return s
     }
@@ -35,7 +35,7 @@ enum Cache {
     static func save(_ s: Snapshot) {
         queue.async {
             guard let d = try? JSONEncoder().encode(s), (try? d.write(to: url, options: .atomic)) != nil else { return }
-            // Títulos y notas de tareas: solo legibles por el usuario.
+            // Task titles and notes: readable only by the user.
             try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         }
     }

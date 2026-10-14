@@ -112,8 +112,8 @@ final class APITests: XCTestCase {
 
     func testDeleteAndListCrud() async throws {
         let l = try await api.createList(title: "Home")
-        let r = try await api.renameList(id: l.id, title: "Casa")
-        XCTAssertEqual(r.title, "Casa")
+        let r = try await api.renameList(id: l.id, title: "Home")
+        XCTAssertEqual(r.title, "Home")
         try await api.deleteList(id: l.id)
         let rest = try await api.lists()
         XCTAssertTrue(rest.isEmpty)

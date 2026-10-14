@@ -23,7 +23,7 @@ struct SignInView: View {
             Image(systemName: "checkmark.circle").font(.system(size: 44)).foregroundStyle(.tint)
             Text("Tasks Bar").font(.title2.bold())
             if Config.isConfigured {
-                Button("Iniciar sesión con Google") {
+                Button("Sign in with Google") {
                     Task {
                         do { try await auth.signIn(); error = nil }
                         catch AuthError.cancelled {}
@@ -32,7 +32,7 @@ struct SignInView: View {
                 }
                 .buttonStyle(.borderedProminent).controlSize(.large)
             } else {
-                Text("Falta el Client ID.\nCompila con scripts/build.sh (ver README).").multilineTextAlignment(.center).foregroundStyle(.secondary)
+                Text("Missing Client ID.\nBuild with scripts/build.sh (see README).").multilineTextAlignment(.center).foregroundStyle(.secondary)
             }
             if let error { Text(error).font(.caption).foregroundStyle(.red).multilineTextAlignment(.center).padding(.horizontal) }
         }
@@ -48,34 +48,34 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button { close() } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
-                Text("Ajustes").font(.headline)
+                Text("Settings").font(.headline)
                 Spacer()
             }.padding(10)
             Divider()
             Form {
-                Picker("Pestaña al abrir", selection: $settings.defaultListID) {
-                    Text("Primera lista").tag("")
-                    Text("Favoritas").tag(TasksStore.favoritesID)
+                Picker("Tab on open", selection: $settings.defaultListID) {
+                    Text("First list").tag("")
+                    Text("Favorites").tag(TasksStore.favoritesID)
                     ForEach(lists) { Text($0.title).tag($0.id) }
                 }
-                Toggle("Mostrar subtareas", isOn: $settings.showSubtasks)
-                Toggle("Mostrar completadas", isOn: $settings.showCompleted)
+                Toggle("Show subtasks", isOn: $settings.showSubtasks)
+                Toggle("Show completed", isOn: $settings.showCompleted)
                 if settings.showCompleted {
-                    Picker("Completadas desde", selection: $settings.completedDays) {
-                        Text("Hoy").tag(0)
-                        Text("Ayer").tag(1)
-                        Text("Hace 3 días").tag(3)
-                        Text("Hace 7 días").tag(7)
-                        Text("Hace 30 días").tag(30)
-                        Text("Siempre").tag(-1)
+                    Picker("Completed since", selection: $settings.completedDays) {
+                        Text("Today").tag(0)
+                        Text("Yesterday").tag(1)
+                        Text("3 days ago").tag(3)
+                        Text("7 days ago").tag(7)
+                        Text("30 days ago").tag(30)
+                        Text("Always").tag(-1)
                     }
-                    Picker("Máximo de completadas", selection: $settings.maxCompleted) {
+                    Picker("Maximum completed", selection: $settings.maxCompleted) {
                         ForEach([5, 10, 25, 50], id: \.self) { Text("\($0)").tag($0) }
-                        Text("Sin límite").tag(0)
+                        Text("No limit").tag(0)
                     }
                 }
-                Toggle("Contador en la barra de menús", isOn: $settings.showBadge)
-                Toggle("Abrir al encender el Mac", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.setLaunchAtLogin($0) }))
+                Toggle("Counter in the menu bar", isOn: $settings.showBadge)
+                Toggle("Launch at login", isOn: Binding(get: { settings.launchAtLogin }, set: { settings.setLaunchAtLogin($0) }))
                 if let e = settings.launchError { Text(e).font(.caption).foregroundStyle(.red) }
             }
             .formStyle(.grouped)
@@ -126,7 +126,7 @@ struct StarButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(on ? "Quitar de favoritas" : "Marcar como favorita")
+        .help(on ? "Remove from favorites" : "Mark as favorite")
     }
 }
 
@@ -147,9 +147,9 @@ struct TaskRowView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(row.task.isCompleted ? "Marcar como pendiente" : "Marcar como completada")
+            .help(row.task.isCompleted ? "Mark as pending" : "Mark as completed")
 
-            Text(row.task.title.isEmpty ? "(sin título)" : row.task.title)
+            Text(row.task.title.isEmpty ? "(untitled)" : row.task.title)
                 .strikethrough(row.task.isCompleted)
                 .foregroundStyle(row.task.isCompleted ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,7 +158,7 @@ struct TaskRowView: View {
                 Text(due).font(.caption.weight(.medium)).monospacedDigit()
                     .foregroundStyle(row.task.isOverdue(minutes: minutes) ? Color.red : .secondary)
             }
-            // Espacio siempre reservado: la fila no cambia de tamaño al pasar el mouse.
+            // Space is always reserved: the row doesn't change size on hover.
             StarButton(on: isFavorite, action: toggleFavorite)
                 .opacity(isFavorite || hovering ? 1 : 0)
                 .allowsHitTesting(isFavorite || hovering)
@@ -190,23 +190,23 @@ struct ListEditor: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button { done(.cancel) } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
-                Text(list == nil ? "Nueva lista" : "Editar lista").font(.headline)
+                Text(list == nil ? "New list" : "Edit list").font(.headline)
                 Spacer()
-                Button(list == nil ? "Crear" : "Guardar") { done(.save(title)) }
+                Button(list == nil ? "Create" : "Save") { done(.save(title)) }
                     .buttonStyle(.borderedProminent).controlSize(.small)
                     .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                     .keyboardShortcut(.defaultAction)
             }.padding(10)
             Divider()
             Form {
-                TextField("Nombre", text: $title)
+                TextField("Name", text: $title)
                 if list != nil {
                     Section {
-                        Button(confirmClear ? "¿Seguro? Pulsa otra vez para eliminarlas" : "Eliminar tareas completadas (\(completedCount))", role: .destructive) {
+                        Button(confirmClear ? "Sure? Press again to delete them" : "Delete completed tasks (\(completedCount))", role: .destructive) {
                             if confirmClear { done(.clearCompleted) } else { confirmClear = true; confirmDelete = false }
                         }
                         .disabled(completedCount == 0)
-                        Button(confirmDelete ? "¿Seguro? Pulsa otra vez para eliminar la lista" : "Eliminar lista", role: .destructive) {
+                        Button(confirmDelete ? "Sure? Press again to delete the list" : "Delete list", role: .destructive) {
                             if confirmDelete { done(.deleteList) } else { confirmDelete = true; confirmClear = false }
                         }
                     }
@@ -228,7 +228,7 @@ func dateFromMinutes(_ m: Int?) -> Date {
     return Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
 }
 
-/// Pantalla para crear una tarea nueva.
+/// Screen to create a new task.
 struct NewTaskView: View {
     struct Values { var title: String; var notes: String; var due: Date?; var minutes: Int? }
     var done: (Values?) -> Void
@@ -243,9 +243,9 @@ struct NewTaskView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button { done(nil) } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
-                Text("Nueva tarea").font(.headline)
+                Text("New task").font(.headline)
                 Spacer()
-                Button("Crear") {
+                Button("Create") {
                     done(Values(title: title, notes: notes, due: hasDue ? due : nil,
                                 minutes: hasDue && hasTime ? minutesOfDay(time) : nil))
                 }
@@ -256,15 +256,15 @@ struct NewTaskView: View {
             Divider()
             Form {
                 Section {
-                    TextField("Título", text: $title)
-                    TextField("Detalles", text: $notes, axis: .vertical).lineLimit(2...5)
+                    TextField("Title", text: $title)
+                    TextField("Details", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
                 Section {
-                    Toggle("Fecha límite", isOn: $hasDue)
+                    Toggle("Due date", isOn: $hasDue)
                     if hasDue {
-                        DatePicker("Fecha", selection: $due, displayedComponents: .date)
-                        Toggle("Hora", isOn: $hasTime)
-                        if hasTime { DatePicker("Hora", selection: $time, displayedComponents: .hourAndMinute) }
+                        DatePicker("Date", selection: $due, displayedComponents: .date)
+                        Toggle("Time", isOn: $hasTime)
+                        if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
                     }
                 }
             }
@@ -274,7 +274,7 @@ struct NewTaskView: View {
     }
 }
 
-/// Detalle de una tarea o subtarea. Los campos se guardan solos al salir; las subtareas actúan al instante.
+/// Detail of a task or subtask. Fields save themselves on exit; subtask actions apply instantly.
 struct TaskDetail: View {
     @ObservedObject var store: TasksStore
     let listID: String
@@ -306,7 +306,7 @@ struct TaskDetail: View {
 
     var body: some View {
         if let t = store.task(taskID, in: listID) { content(t) }
-        else { Color.clear.onAppear { back() } }     // borrada desde otro dispositivo
+        else { Color.clear.onAppear { back() } }     // deleted from another device
     }
 
     private func content(_ t: GTask) -> some View {
@@ -316,30 +316,30 @@ struct TaskDetail: View {
                 Button { back() } label: {
                     Image(systemName: "chevron.left").frame(width: 28, height: 28).contentShape(Rectangle())
                 }.buttonStyle(.plain)
-                Text(isSub ? "Subtarea" : "Tarea").font(.headline)
+                Text(isSub ? "Subtask" : "Task").font(.headline)
                 Spacer()
                 StarButton(on: store.isFavorite(taskID), size: 17) { store.toggleFavorite(t, in: listID) }
             }.padding(.horizontal, 10).padding(.vertical, 6)
             Divider()
             Form {
                 Section {
-                    TextField("Título", text: $title).onSubmit { back() }
-                    TextField("Detalles", text: $notes, axis: .vertical).lineLimit(2...5)
+                    TextField("Title", text: $title).onSubmit { back() }
+                    TextField("Details", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
                 Section {
-                    Toggle("Fecha límite", isOn: $hasDue)
+                    Toggle("Due date", isOn: $hasDue)
                     if hasDue {
-                        DatePicker("Fecha", selection: $due, displayedComponents: .date)
-                        Toggle("Hora", isOn: $hasTime)
-                        if hasTime { DatePicker("Hora", selection: $time, displayedComponents: .hourAndMinute) }
+                        DatePicker("Date", selection: $due, displayedComponents: .date)
+                        Toggle("Time", isOn: $hasTime)
+                        if hasTime { DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute) }
                     }
                 }
                 if !isSub {
-                    Section("Subtareas") {
+                    Section("Subtasks") {
                         ForEach(store.subtasks(of: taskID, in: listID)) { sub in subtaskRow(sub) }
                         HStack(spacing: 8) {
                             Image(systemName: "plus.circle").foregroundStyle(.secondary)
-                            TextField("Agregar subtarea", text: $newSub).textFieldStyle(.plain)
+                            TextField("Add subtask", text: $newSub).textFieldStyle(.plain)
                                 .onSubmit {
                                     let s = newSub; newSub = ""
                                     Task { await store.add(title: s, parent: taskID, in: listID) }
@@ -348,7 +348,7 @@ struct TaskDetail: View {
                     }
                 }
                 Section {
-                    Button(confirmDelete ? "¿Seguro? Pulsa otra vez para eliminar" : (isSub ? "Eliminar subtarea" : "Eliminar tarea"), role: .destructive) {
+                    Button(confirmDelete ? "Sure? Press again to delete" : (isSub ? "Delete subtask" : "Delete task"), role: .destructive) {
                         if confirmDelete {
                             skipCommit = true
                             Task { await store.delete(t, in: listID) }
@@ -372,7 +372,7 @@ struct TaskDetail: View {
             }.buttonStyle(.plain)
             Button { open(sub.id) } label: {
                 HStack {
-                    Text(sub.title.isEmpty ? "(sin título)" : sub.title)
+                    Text(sub.title.isEmpty ? "(untitled)" : sub.title)
                         .strikethrough(sub.isCompleted).foregroundStyle(sub.isCompleted ? .secondary : .primary)
                     Spacer(minLength: 4)
                     if let d = sub.dueLabel(minutes: m) {
@@ -398,7 +398,7 @@ struct TaskDetail: View {
 
 struct DetailRoute: Equatable {
     var listID: String
-    var path: [String]      // tarea → subtarea
+    var path: [String]      // task → subtask
 }
 
 struct TasksView: View {
@@ -445,7 +445,7 @@ struct TasksView: View {
         Button {
             renamingList = store.lists.first { $0.id == store.selectedListID }
         } label: {
-            Label("Editar lista", systemImage: "pencil").font(.system(size: 12)).foregroundStyle(.secondary)
+            Label("Edit list", systemImage: "pencil").font(.system(size: 12)).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity).padding(.vertical, 6).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -461,7 +461,7 @@ struct TasksView: View {
                         Button { store.selectedListID = TasksStore.favoritesID } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "star.fill").font(.system(size: 11)).foregroundStyle(Color.yellow)
-                                Text("Favoritas").font(.system(size: 13, weight: favOn ? .semibold : .regular)).lineLimit(1)
+                                Text("Favorites").font(.system(size: 13, weight: favOn ? .semibold : .regular)).lineLimit(1)
                             }
                             .foregroundStyle(favOn ? Color.primary : .secondary)
                             .padding(.horizontal, 12).padding(.vertical, 6)
@@ -484,13 +484,13 @@ struct TasksView: View {
                 Button { creatingList = true } label: {
                     Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.secondary).frame(width: 30, height: 28).contentShape(Rectangle())
-                }.buttonStyle(.plain).help("Nueva lista")
+                }.buttonStyle(.plain).help("New list")
             }
             .padding(10)
             Divider()
             HStack(spacing: 8) {
                 Image(systemName: "plus.circle").foregroundStyle(.secondary)
-                TextField(isFavorites ? "Nueva tarea favorita" : "Nueva tarea", text: $newTitle)
+                TextField(isFavorites ? "New favorite task" : "New task", text: $newTitle)
                     .textFieldStyle(.plain)
                     .onSubmit {
                         let t = newTitle; newTitle = ""
@@ -502,7 +502,7 @@ struct TasksView: View {
             Divider()
 
             if store.rows.isEmpty {
-                Spacer(); Text(store.isSyncing ? "Cargando…" : (isFavorites ? "Sin favoritas" : "Sin tareas")).foregroundStyle(.secondary); Spacer()
+                Spacer(); Text(store.isSyncing ? "Loading…" : (isFavorites ? "No favorites" : "No tasks")).foregroundStyle(.secondary); Spacer()
                 if !isFavorites { editListButton }
             } else {
                 List {
@@ -530,14 +530,14 @@ struct TasksView: View {
 
             Divider()
             HStack(spacing: 4) {
-                FooterButton(icon: "plus.circle", label: "Nueva") { creating = true }
-                FooterButton(icon: "arrow.clockwise", label: "Sincronizar") { Task { await store.sync() } }
-                FooterButton(icon: "gearshape", label: "Ajustes") { showSettings = true }
+                FooterButton(icon: "plus.circle", label: "New") { creating = true }
+                FooterButton(icon: "arrow.clockwise", label: "Sync") { Task { await store.sync() } }
+                FooterButton(icon: "gearshape", label: "Settings") { showSettings = true }
                 Menu {
-                    Button("Cerrar sesión de Google") { auth.signOut(); store.reset() }
+                    Button("Sign out of Google") { auth.signOut(); store.reset() }
                     Divider()
-                    Button("Salir de Tasks Bar") { NSApp.terminate(nil) }.keyboardShortcut("q")
-                } label: { FooterLabel(icon: "ellipsis.circle", label: "Más") }
+                    Button("Quit Tasks Bar") { NSApp.terminate(nil) }.keyboardShortcut("q")
+                } label: { FooterLabel(icon: "ellipsis.circle", label: "More") }
                     .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
                     .frame(maxWidth: .infinity)
             }
@@ -553,7 +553,7 @@ extension GTask {
         return f.date(from: String(due.prefix(10)))
     }
 
-    /// Fecha límite como día calendario local (Google la guarda como medianoche UTC).
+    /// Due date as a local calendar day (Google stores it as midnight UTC).
     var dueDay: Date? {
         guard let d = dueDate else { return nil }
         var utc = Calendar(identifier: .gregorian); utc.timeZone = TimeZone(identifier: "UTC")!
@@ -569,13 +569,13 @@ extension GTask {
     var dueLabel: String? {
         guard let d = dueDay else { return nil }
         let cal = Calendar.current
-        if cal.isDateInToday(d) { return "Hoy" }
-        if cal.isDateInTomorrow(d) { return "Mañana" }
-        if cal.isDateInYesterday(d) { return "Ayer" }
+        if cal.isDateInToday(d) { return "Today" }
+        if cal.isDateInTomorrow(d) { return "Tomorrow" }
+        if cal.isDateInYesterday(d) { return "Yesterday" }
         return d.formatted(.dateTime.day().month(.abbreviated))
     }
 
-    /// ¿El formulario de edición no cambia nada? (evita un PATCH inútil).
+    /// Does the edit form change nothing? (avoids a pointless PATCH).
     func isUnchanged(title: String, notes newNotes: String, due newDue: Date?, minutes newMin: Int?, storedMinutes: Int?) -> Bool {
         let sameDue: Bool
         switch (dueDay, newDue) {

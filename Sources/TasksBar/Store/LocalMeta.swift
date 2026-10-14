@@ -1,13 +1,13 @@
 import Foundation
 
-/// Datos que la API de Google Tasks no soporta (favoritas y hora del día). Solo existen en este Mac.
+/// Data the Google Tasks API doesn't support (favorites and time of day). They only exist on this Mac.
 struct LocalMeta: Codable, Equatable {
     var favorites: [String: String] = [:]   // taskID → listID
-    var minutes: [String: Int] = [:]        // taskID → minutos desde medianoche
+    var minutes: [String: Int] = [:]        // taskID → minutes since midnight
 
     private static let key: String = {
         #if DEBUG
-        if Demo.isOn { return "localMeta-demo" }   // no mezclar favoritas demo con las reales
+        if Demo.isOn { return "localMeta-demo" }   // don't mix demo favorites with the real ones
         #endif
         return "localMeta"
     }()

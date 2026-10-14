@@ -1,11 +1,11 @@
 #if DEBUG
 import Foundation
 
-/// Modo demo (solo builds debug): `TASKSBAR_FAKE=1 swift run` arranca la app con datos en memoria, sin login ni red.
+/// Demo mode (debug builds only): `TASKSBAR_FAKE=1 swift run` starts the app with in-memory data, no login and no network.
 enum Demo {
     static let isOn = ProcessInfo.processInfo.environment["TASKSBAR_FAKE"] == "1"
 
-    /// Sesión falsa siempre válida; no toca el Keychain real.
+    /// Fake session that is always valid; never touches the real Keychain.
     final class Storage: TokenStorage {
         func load() -> Data? { try? JSONEncoder().encode(Tokens(access: "demo", refresh: "demo", expiry: .distantFuture)) }
         func save(_ data: Data) {}
@@ -13,7 +13,7 @@ enum Demo {
     }
 
     actor Repo: TasksRepository {
-        private var lists: [TaskList] = [.init(id: "L1", title: "Trabajo"), .init(id: "L2", title: "Casa")]
+        private var lists: [TaskList] = [.init(id: "L1", title: "Work"), .init(id: "L2", title: "Home")]
         private var tasks: [String: [GTask]] = [:]
         private var n = 0
 
@@ -27,13 +27,13 @@ enum Demo {
                 return try! JSONDecoder().decode(GTask.self, from: JSONSerialization.data(withJSONObject: j))
             }
             tasks["L1"] = [
-                t("a", "Preparar demo del viernes", pos: "01", due: 1, notes: "Revisar slides"),
-                t("a1", "Ensayar presentación", parent: "a", pos: "01"),
-                t("a2", "Enviar invitación", parent: "a", pos: "02", done: true),
-                t("b", "Responder correos", pos: "02", due: -1),
-                t("c", "Revisar PR", pos: "03", done: true),
+                t("a", "Prepare Friday demo", pos: "01", due: 1, notes: "Review slides"),
+                t("a1", "Rehearse presentation", parent: "a", pos: "01"),
+                t("a2", "Send invitation", parent: "a", pos: "02", done: true),
+                t("b", "Reply to emails", pos: "02", due: -1),
+                t("c", "Review PR", pos: "03", done: true),
             ]
-            tasks["L2"] = [t("h", "Comprar café", pos: "01", due: 0), t("h2", "Llamar al plomero", pos: "02")]
+            tasks["L2"] = [t("h", "Buy coffee", pos: "01", due: 0), t("h2", "Call the plumber", pos: "02")]
         }
 
         private func next() -> String { n += 1; return "N\(n)" }

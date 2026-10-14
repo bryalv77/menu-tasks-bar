@@ -1,7 +1,7 @@
 import XCTest
 @testable import TasksBar
 
-/// Carreras: el servidor falso responde con latencia para dejar operaciones en vuelo.
+/// Races: the fake server responds with latency to leave operations in flight.
 @MainActor
 final class ConcurrencyTests: XCTestCase {
     private var store: TasksStore!

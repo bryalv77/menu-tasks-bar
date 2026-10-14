@@ -1,4 +1,4 @@
-// Genera Resources/AppIcon.icns: swift scripts/make-icon.swift
+// Generates Resources/AppIcon.icns: swift scripts/make-icon.swift
 import AppKit
 
 func render(_ px: Int) -> Data {
@@ -8,7 +8,7 @@ func render(_ px: Int) -> Data {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let s = CGFloat(px)
-    let r = NSRect(x: s * 0.098, y: s * 0.098, width: s * 0.804, height: s * 0.804)   // margen estándar de macOS
+    let r = NSRect(x: s * 0.098, y: s * 0.098, width: s * 0.804, height: s * 0.804)   // standard macOS margin
     let shadow = NSShadow()
     shadow.shadowColor = NSColor(white: 0, alpha: 0.3); shadow.shadowBlurRadius = s * 0.02; shadow.shadowOffset = NSSize(width: 0, height: -s * 0.01)
     NSGraphicsContext.saveGraphicsState(); shadow.set()

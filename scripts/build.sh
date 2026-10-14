@@ -1,9 +1,9 @@
 #!/bin/bash
-# Compila y ensambla build/TasksBar.app.
-#   UNIVERSAL=1  → binario arm64+x86_64
-#   SIGN_ID="Developer ID Application: Nombre (TEAMID)" → firma real (por defecto ad-hoc; el Keychain pregunta en cada build: usa un cert. estable)
-#   Config local sin commitear: copia .env.example a .env (SIGN_ID, NOTARY_PROFILE)
-#   NOTARY_PROFILE=perfil → notariza y grapa el ticket (necesita SIGN_ID)
+# Builds and assembles build/TasksBar.app.
+#   UNIVERSAL=1  → arm64+x86_64 binary
+#   SIGN_ID="Developer ID Application: Your Name (TEAMID)" → real signature (ad-hoc by default; the Keychain prompts on every build, so use a stable certificate)
+#   Local uncommitted config: copy .env.example to .env (SIGN_ID, NOTARY_PROFILE)
+#   NOTARY_PROFILE=profile → notarizes and staples the ticket (needs SIGN_ID)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f .env ] && { set -a; . ./.env; set +a; }
@@ -16,11 +16,11 @@ rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp "$BIN" "$APP/Contents/MacOS/"
 mkdir -p "$APP/Contents/Resources"; cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 cp Resources/Info.plist "$APP/Contents/"
-# Client ID fuera del repo: se lee de client.plist (ignorado por git).
-CID=$(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" client.plist) || { echo "Falta client.plist con CLIENT_ID" >&2; exit 1; }
+# Client ID kept out of the repo: read from client.plist (ignored by git).
+CID=$(/usr/libexec/PlistBuddy -c "Print :CLIENT_ID" client.plist) || { echo "Missing client.plist with CLIENT_ID" >&2; exit 1; }
 /usr/libexec/PlistBuddy -c "Add :CLIENT_ID string $CID" "$APP/Contents/Info.plist"
 codesign --force --options runtime --entitlements Resources/TasksBar.entitlements --sign "${SIGN_ID:--}" "$APP"
-# Notarización (requiere SIGN_ID Developer ID): NOTARY_PROFILE=<perfil de `xcrun notarytool store-credentials`>
+# Notarization (requires a Developer ID SIGN_ID): NOTARY_PROFILE=<profile from `xcrun notarytool store-credentials`>
 if [ -n "${NOTARY_PROFILE:-}" ]; then
   ditto -c -k --keepParent "$APP" build/TasksBar.zip
   xcrun notarytool submit build/TasksBar.zip --keychain-profile "$NOTARY_PROFILE" --wait

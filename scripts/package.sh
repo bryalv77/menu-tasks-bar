@@ -1,5 +1,5 @@
 #!/bin/bash
-# Compila y empaqueta build/TasksBar-<versión>.zip y .dmg (usa SIGN_ID/NOTARY_PROFILE de .env, igual que build.sh).
+# Builds and packages build/TasksBar-<version>.zip and .dmg (uses SIGN_ID/NOTARY_PROFILE from .env, like build.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f .env ] && { set -a; . ./.env; set +a; }
