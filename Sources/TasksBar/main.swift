@@ -74,6 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainActor.assumeIsolated { if self?.auth.isSignedIn == true { self?.refresh() } }
         }
         auth.$isSignedIn.dropFirst().filter { $0 }.sink { [weak self] _ in Task { await self?.store.sync() } }.store(in: &bag)
+        // Cualquier cierre de sesión (también el automático por invalid_grant) borra los datos en memoria y las favoritas.
+        auth.$isSignedIn.dropFirst().filter { !$0 }.sink { [weak self] _ in self?.store.reset() }.store(in: &bag)
     }
 
     private func refresh() {

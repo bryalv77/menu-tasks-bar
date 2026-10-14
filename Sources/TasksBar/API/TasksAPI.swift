@@ -4,7 +4,7 @@ enum APIError: LocalizedError {
     case http(Int, String), offline
     var errorDescription: String? {
         switch self {
-        case .http(let c, let m): return "Error \(c): \(m)"
+        case .http(let c, let m): return m.isEmpty ? "Error \(c)" : "Error \(c): \(m)"
         case .offline: return "Sin conexión."
         }
     }
@@ -86,6 +86,12 @@ final class TasksAPI: TasksRepository {
         return String(format: "%04d-%02d-%02dT00:00:00.000Z", c.year!, c.month!, c.day!)
     }
 
+    /// Solo el `error.message` de Google; nunca el cuerpo crudo (puede ser HTML o texto técnico).
+    static func errorMessage(from data: Data) -> String {
+        struct E: Decodable { struct B: Decodable { let message: String? }; let error: B? }
+        return (try? JSONDecoder().decode(E.self, from: data))?.error?.message.map { String($0.prefix(200)) } ?? ""
+    }
+
     // MARK: Núcleo
 
     /// Un ID nunca debe poder añadir segmentos ni parámetros a la ruta.
@@ -126,7 +132,7 @@ final class TasksAPI: TasksRepository {
             let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
             if status == 401, !retriedAuth { retriedAuth = true; continue }
             guard (200..<300).contains(status) else {
-                throw APIError.http(status, String(data: data, encoding: .utf8)?.prefix(200).description ?? "")
+                throw APIError.http(status, Self.errorMessage(from: data))
             }
             if T.self == EmptyResponse.self { return EmptyResponse() as! T }
             return try JSONDecoder().decode(T.self, from: data)

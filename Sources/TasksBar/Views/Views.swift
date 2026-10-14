@@ -32,7 +32,7 @@ struct SignInView: View {
                 }
                 .buttonStyle(.borderedProminent).controlSize(.large)
             } else {
-                Text("Falta el Client ID.\nEdítalo en Sources/TasksBar/Config.swift").multilineTextAlignment(.center).foregroundStyle(.secondary)
+                Text("Falta el Client ID.\nCompila con scripts/build.sh (ver README).").multilineTextAlignment(.center).foregroundStyle(.secondary)
             }
             if let error { Text(error).font(.caption).foregroundStyle(.red).multilineTextAlignment(.center).padding(.horizontal) }
         }

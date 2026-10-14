@@ -119,3 +119,12 @@ final class APITests: XCTestCase {
         XCTAssertTrue(rest.isEmpty)
     }
 }
+
+final class ErrorMessageTests: XCTestCase {
+    func testOnlyGoogleMessageIsShown() {
+        let json = #"{"error":{"code":403,"message":"Tasks API has not been used"}}"#
+        XCTAssertEqual(TasksAPI.errorMessage(from: Data(json.utf8)), "Tasks API has not been used")
+        XCTAssertEqual(TasksAPI.errorMessage(from: Data("<html>502 Bad Gateway</html>".utf8)), "")
+        XCTAssertEqual(APIError.http(502, "").errorDescription, "Error 502")
+    }
+}

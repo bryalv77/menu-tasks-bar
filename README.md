@@ -47,6 +47,8 @@ cp .env.example .env     # edita SIGN_ID con tu certificado
 UNIVERSAL=1 ./scripts/build.sh  # arm64 + x86_64
 ```
 
+Para generar el `.zip` y el `.dmg` de distribución: `./scripts/package.sh` (los deja en `build/`).
+
 `build.sh` lee `CLIENT_ID` de `client.plist` y lo inyecta en el `Info.plist` del `.app`; el Client ID no está en el código.
 
 ## Desarrollo
