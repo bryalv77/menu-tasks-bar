@@ -17,6 +17,17 @@ Requires macOS 13 or later.
 - App Sandbox with network access as its only entitlement (`Resources/TasksBar.entitlements`).
 - The app only talks to Google's servers. No telemetry.
 
+## Install
+
+Download the latest `.dmg` from [Releases](https://github.com/bryalv77/menu-tasks-bar/releases), open it and drag **TasksBar** to **Applications**.
+
+> **Beta builds are not notarized by Apple yet**, so macOS will block the first launch. To open it anyway:
+> - Right-click the app → **Open** → **Open**, or
+> - on macOS 15+: try to open it once, then go to **System Settings → Privacy & Security → Open Anyway**, or
+> - from a terminal: `xattr -dr com.apple.quarantine /Applications/TasksBar.app`
+>
+> Don't trust a binary you can't verify? Build it yourself (see below) and compare the `.dmg` checksum published in each release.
+
 ## Build
 
 You need Xcode (or the Command Line Tools) with Swift 5.9+ and your own Google OAuth Client ID.
